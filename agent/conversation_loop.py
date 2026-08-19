@@ -1097,6 +1097,10 @@ _CODEX_ACK_CONTINUATION_NUDGE = (
     "send your final answer after completing the task.]"
 )
 
+# Marks interim Responses samplings whose terminal frame explicitly kept the
+# enclosing user turn open. These samples are merged into one assistant turn.
+_CODEX_END_TURN_CONTINUATION_FLAG = "_codex_end_turn_continuation"
+
 # Re-prompt sent when a provider returns finish_reason="tool_calls" with an
 # empty tool_calls array (dropped-tool-call recovery, see the retry loop
 # below). Named for the same reason as _CODEX_ACK_CONTINUATION_NUDGE — this
@@ -6645,6 +6649,8 @@ def run_conversation(
                 agent._codex_incomplete_retries += 1
 
                 interim_msg = agent._build_assistant_message(assistant_message, finish_reason)
+                if getattr(response, "end_turn", None) is False:
+                    interim_msg[_CODEX_END_TURN_CONTINUATION_FLAG] = True
                 interim_has_content = bool((interim_msg.get("content") or "").strip())
                 interim_has_reasoning = bool(interim_msg.get("reasoning", "").strip()) if isinstance(interim_msg.get("reasoning"), str) else False
                 interim_has_codex_reasoning = bool(interim_msg.get("codex_reasoning_items"))
@@ -6684,7 +6690,27 @@ def run_conversation(
                         and last_msg.get("finish_reason") == "incomplete"
                         and same_visible_output
                     )
-                    if visible_duplicate:
+                    end_turn_chain = (
+                        isinstance(last_msg, dict)
+                        and (
+                            last_msg.get(_CODEX_END_TURN_CONTINUATION_FLAG) is True
+                            or interim_msg.get(_CODEX_END_TURN_CONTINUATION_FLAG) is True
+                        )
+                    )
+                    if end_turn_chain:
+                        from agent.codex_responses_adapter import (
+                            merge_codex_assistant_samples,
+                        )
+
+                        merged_interim = merge_codex_assistant_samples(
+                            last_msg,
+                            interim_msg,
+                        )
+                        merged_interim[_CODEX_END_TURN_CONTINUATION_FLAG] = True
+                        messages[-1] = merged_interim
+                        if not visible_duplicate:
+                            agent._emit_interim_assistant_message(interim_msg)
+                    elif visible_duplicate:
                         # Update replay state in-place so the latest provider
                         # payload is preserved without re-emitting identical
                         # user-visible commentary.
@@ -7124,6 +7150,20 @@ def run_conversation(
                     and previous_msg.get("finish_reason") == "incomplete"
                     and previous_interim_visible == current_interim_visible
                 )
+                if (
+                    agent.api_mode == "codex_responses"
+                    and isinstance(previous_msg, dict)
+                    and previous_msg.get(_CODEX_END_TURN_CONTINUATION_FLAG) is True
+                ):
+                    from agent.codex_responses_adapter import (
+                        merge_codex_assistant_samples,
+                    )
+
+                    messages.pop()
+                    assistant_msg = merge_codex_assistant_samples(
+                        previous_msg,
+                        assistant_msg,
+                    )
                 append_message(messages, assistant_msg)
 
                 # Mixed batch: error-result the invalid calls and strip them
@@ -7888,6 +7928,30 @@ def run_conversation(
                     )
                 ):
                     messages.pop()
+
+                # A Codex user turn may span multiple Responses samplings.
+                # ``end_turn=false`` records each sampling as interim assistant
+                # state so its opaque response items can be replayed on the
+                # next request.
+                # Once a final answer arrives those samples are one logical
+                # assistant turn, not consecutive durable assistant turns.
+                # Collapse the trailing interim run into the final message,
+                # retaining every ordered Codex replay item while keeping the
+                # user-facing content equal to the actual final answer.
+                if (
+                    agent.api_mode == "codex_responses"
+                    and messages
+                    and isinstance(messages[-1], dict)
+                    and messages[-1].get(_CODEX_END_TURN_CONTINUATION_FLAG) is True
+                ):
+                    from agent.codex_responses_adapter import (
+                        merge_codex_assistant_samples,
+                    )
+
+                    final_msg = merge_codex_assistant_samples(
+                        messages.pop(),
+                        final_msg,
+                    )
 
                 try:
                     from agent.verification_stop import (

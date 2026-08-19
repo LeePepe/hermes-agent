@@ -662,6 +662,40 @@ def test_consume_codex_stream_separates_commentary_from_analysis(monkeypatch):
     assert response.output == [commentary_item]
 
 
+def test_consume_codex_stream_preserves_end_turn_false(monkeypatch):
+    """A completed sampling can still require another Codex sampling."""
+    from agent.codex_runtime import _consume_codex_event_stream
+
+    message_item = SimpleNamespace(
+        type="message",
+        role="assistant",
+        status="completed",
+        content=[
+            SimpleNamespace(
+                type="output_text",
+                text="I will inspect the repository now.",
+            )
+        ],
+    )
+
+    response = _consume_codex_event_stream(
+        _FakeCreateStream([
+            SimpleNamespace(type="response.output_item.done", item=message_item),
+            SimpleNamespace(
+                type="response.completed",
+                response=SimpleNamespace(
+                    id="resp_continue",
+                    status="completed",
+                    end_turn=False,
+                ),
+            ),
+        ]),
+        model="gpt-5.6-sol",
+    )
+
+    assert response.end_turn is False
+
+
 
 
 def test_run_codex_stream_delivers_redacted_commentary_once(monkeypatch):
@@ -1434,6 +1468,101 @@ def test_run_conversation_codex_replay_payload_keeps_call_id(monkeypatch):
     assert function_output["call_id"] == "call_1"
 
 
+def test_codex_end_turn_false_then_tool_call_keeps_one_assistant_turn(monkeypatch):
+    agent = _build_agent(monkeypatch)
+    progress = _codex_message_response("I will inspect the repository now.")
+    progress.end_turn = False
+    responses = [
+        progress,
+        _codex_tool_call_response(),
+        _codex_message_response("Inspection complete."),
+    ]
+    requests = []
+    live_role_sequences = []
+
+    def model_call(api_kwargs):
+        requests.append(api_kwargs)
+        live_role_sequences.append(
+            [message["role"] for message in agent._session_messages]
+        )
+        return responses.pop(0)
+
+    monkeypatch.setattr(agent, "_interruptible_api_call", model_call)
+
+    def fake_execute(assistant_message, messages, effective_task_id, *_args):
+        for call in assistant_message.tool_calls:
+            messages.append({
+                "role": "tool",
+                "tool_call_id": call.id,
+                "content": '{"ok":true}',
+            })
+
+    monkeypatch.setattr(agent, "_execute_tool_calls", fake_execute)
+
+    result = agent.run_conversation("Inspect the repository.")
+    assert result["completed"] is True
+    assert len(requests) == 3
+    assert all(
+        all(left != right for left, right in zip(roles, roles[1:]))
+        for roles in live_role_sequences
+    ), live_role_sequences
+    roles = [message["role"] for message in result["messages"]]
+    assert all(left != right for left, right in zip(roles, roles[1:])), roles
+    assert any(item.get("type") == "function_call" for item in requests[2]["input"])
+
+
+def test_codex_end_turn_false_continuation_is_bounded(monkeypatch):
+    agent = _build_agent(monkeypatch)
+    responses = []
+    for index in range(3):
+        response = _codex_message_response(f"Progress sample {index + 1}.")
+        response.end_turn = False
+        responses.append(response)
+    calls = []
+    monkeypatch.setattr(
+        agent,
+        "_interruptible_api_call",
+        lambda api_kwargs: calls.append(api_kwargs) or responses.pop(0),
+    )
+
+    result = agent.run_conversation("Inspect the repository.")
+
+    assert len(calls) == 3
+    assert result["completed"] is False
+    assert result["partial"] is True
+    assert "remained incomplete after 3" in result["error"]
+
+
+def test_codex_open_turn_merges_followup_commentary_without_end_turn(monkeypatch):
+    agent = _build_agent(monkeypatch)
+    first = _codex_message_response("I will inspect the repository now.")
+    first.end_turn = False
+    responses = [
+        first,
+        _codex_commentary_message_response("Still inspecting."),
+        _codex_message_response("Inspection complete."),
+    ]
+    live_role_sequences = []
+
+    def model_call(api_kwargs):
+        live_role_sequences.append(
+            [message["role"] for message in agent._session_messages]
+        )
+        return responses.pop(0)
+
+    monkeypatch.setattr(agent, "_interruptible_api_call", model_call)
+
+    result = agent.run_conversation("Inspect the repository.")
+
+    assert result["completed"] is True
+    assert all(
+        all(left != right for left, right in zip(roles, roles[1:]))
+        for roles in live_role_sequences
+    ), live_role_sequences
+    roles = [message["role"] for message in result["messages"]]
+    assert all(left != right for left, right in zip(roles, roles[1:])), roles
+
+
 
 
 
@@ -1662,6 +1791,92 @@ def test_normalize_codex_response_marks_commentary_only_message_as_incomplete(mo
     assert assistant_message.codex_message_items
     assert assistant_message.codex_message_items[0]["phase"] == "commentary"
     assert "inspect the repository" in assistant_message.codex_message_items[0]["content"][0]["text"]
+
+
+def test_normalize_codex_response_marks_end_turn_false_as_incomplete(monkeypatch):
+    """Codex can complete one sampling while keeping the user turn open."""
+    from agent.codex_responses_adapter import _normalize_codex_response
+
+    response = _codex_message_response("I will inspect the repository now.")
+    response.end_turn = False
+
+    assistant_message, finish_reason = _normalize_codex_response(response)
+
+    assert assistant_message.content == "I will inspect the repository now."
+    assert finish_reason == "incomplete"
+
+
+def test_codex_end_turn_false_continues_sampling_until_final(monkeypatch):
+    agent = _build_agent(monkeypatch)
+    first = _codex_message_response("I will inspect the repository now.")
+    first.end_turn = False
+    second = _codex_message_response("I found the relevant module.")
+    second.end_turn = False
+    responses = [first, second, _codex_message_response("Inspection complete.")]
+    calls = []
+    live_role_sequences = []
+
+    def model_call(api_kwargs):
+        calls.append(api_kwargs)
+        live_role_sequences.append(
+            [message["role"] for message in agent._session_messages]
+        )
+        return responses.pop(0)
+
+    monkeypatch.setattr(agent, "_interruptible_api_call", model_call)
+
+    result = agent.run_conversation("Inspect the repository.")
+
+    assert len(calls) == 3
+    assert all(
+        all(left != right for left, right in zip(roles, roles[1:]))
+        for roles in live_role_sequences
+    ), live_role_sequences
+    assert result["completed"] is True
+    assert result["final_response"] == "Inspection complete."
+    roles = [message["role"] for message in result["messages"]]
+    assert all(left != right for left, right in zip(roles, roles[1:])), roles
+    final_message = result["messages"][-1]
+    assert not final_message.get("_codex_end_turn_continuation")
+    replay_texts = [
+        part["text"]
+        for item in final_message.get("codex_message_items") or []
+        for part in item.get("content") or []
+    ]
+    assert replay_texts == [
+        "I will inspect the repository now.",
+        "I found the relevant module.",
+        "Inspection complete.",
+    ]
+
+
+@pytest.mark.parametrize("end_turn", [True, None])
+def test_normalize_codex_response_stops_when_turn_is_not_explicitly_open(
+    monkeypatch,
+    end_turn,
+):
+    from agent.codex_responses_adapter import _normalize_codex_response
+
+    response = _codex_message_response("Inspection complete.")
+    if end_turn is not None:
+        response.end_turn = end_turn
+
+    assistant_message, finish_reason = _normalize_codex_response(response)
+
+    assert assistant_message.content == "Inspection complete."
+    assert finish_reason == "stop"
+
+
+def test_normalize_codex_response_keeps_tool_call_precedence_over_end_turn(monkeypatch):
+    from agent.codex_responses_adapter import _normalize_codex_response
+
+    response = _codex_tool_call_response()
+    response.end_turn = False
+
+    assistant_message, finish_reason = _normalize_codex_response(response)
+
+    assert len(assistant_message.tool_calls) == 1
+    assert finish_reason == "tool_calls"
 
 
 def test_normalize_codex_response_does_not_fallback_to_output_text_for_commentary_only(monkeypatch):

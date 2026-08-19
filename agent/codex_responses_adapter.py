@@ -1296,6 +1296,43 @@ def _format_responses_error(error_obj: Any, response_status: str) -> str:
 # Full response normalization
 # ---------------------------------------------------------------------------
 
+def merge_codex_assistant_samples(
+    prior: Dict[str, Any],
+    newer: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Combine two Responses samplings from one logical assistant turn.
+
+    The newer sampling owns visible content and terminal metadata. Ordered
+    message items accumulate for exact replay; opaque reasoning uses the
+    existing checkpoint-aware merge contract.
+    """
+    merged = dict(newer)
+
+    message_items = list(prior.get("codex_message_items") or [])
+    message_items.extend(newer.get("codex_message_items") or [])
+    if message_items:
+        merged["codex_message_items"] = message_items
+
+    reasoning_texts = []
+    for message in (prior, newer):
+        reasoning = message.get("reasoning")
+        if isinstance(reasoning, str) and reasoning.strip():
+            reasoning_texts.append(reasoning.strip())
+    if reasoning_texts:
+        merged["reasoning"] = "\n\n".join(reasoning_texts)
+
+    from agent.native_compaction import merge_interim_reasoning_items
+
+    reasoning_items = merge_interim_reasoning_items(
+        prior.get("codex_reasoning_items"),
+        newer.get("codex_reasoning_items"),
+    )
+    if reasoning_items:
+        merged["codex_reasoning_items"] = reasoning_items
+
+    return merged
+
+
 def _normalize_codex_response(
     response: Any,
     *,
@@ -1639,6 +1676,11 @@ def _normalize_codex_response(
         finish_reason = "tool_calls"
     elif response_incomplete_content_filter:
         finish_reason = "content_filter"
+    elif getattr(response, "end_turn", None) is False:
+        # ChatGPT's Codex backend can finish one Responses sampling without
+        # finishing the enclosing user turn.  Preserve that explicit protocol
+        # signal instead of treating an ordinary message item as a final answer.
+        finish_reason = "incomplete"
     elif leaked_tool_call_text:
         finish_reason = "incomplete"
     elif saw_streaming_or_item_incomplete:

@@ -1060,6 +1060,7 @@ def _consume_codex_event_stream(
     * ``status``: ``completed`` / ``incomplete`` / ``failed`` (or ``completed`` if
       the stream ended without a terminal frame but produced content).
     * ``id``: ``response.id`` when present.
+    * ``end_turn``: optional Codex backend turn-boundary signal.
     * ``incomplete_details``: passed through for ``response.incomplete`` frames.
     * ``error``: passed through for ``response.failed`` frames.
     * ``model``: from kwargs (the wire model name is not authoritative).
@@ -1096,6 +1097,7 @@ def _consume_codex_event_stream(
     terminal_status: str = "completed"
     terminal_usage: Any = None
     terminal_response_id: str = None
+    terminal_end_turn: bool | None = None
     terminal_incomplete_details: Any = None
     terminal_error: Any = None
     saw_terminal = False
@@ -1241,6 +1243,11 @@ def _consume_codex_event_stream(
                 if rid is None and isinstance(resp_obj, dict):
                     rid = resp_obj.get("id")
                 terminal_response_id = rid
+                end_turn = getattr(resp_obj, "end_turn", None)
+                if end_turn is None and isinstance(resp_obj, dict):
+                    end_turn = resp_obj.get("end_turn")
+                if isinstance(end_turn, bool):
+                    terminal_end_turn = end_turn
                 rstatus = getattr(resp_obj, "status", None)
                 if rstatus is None and isinstance(resp_obj, dict):
                     rstatus = resp_obj.get("status")
@@ -1298,6 +1305,7 @@ def _consume_codex_event_stream(
         usage=terminal_usage,
         status=terminal_status,
         id=terminal_response_id,
+        end_turn=terminal_end_turn,
         model=model,
         incomplete_details=terminal_incomplete_details,
         error=terminal_error,
