@@ -317,3 +317,63 @@ def test_probe_skipped_for_custom_args_without_acp():
     with _patch("agent.copilot_acp_client.subprocess.run") as run_mock:
         assert _acp_supported("mycli", ["--custom-transport"]) is True
     run_mock.assert_not_called()
+
+
+def test_acp_tool_permission_policy_defaults_to_deny(monkeypatch):
+    """Auto-approval must stay opt-in — the backend runs commands unattended."""
+    from agent.copilot_acp_client import _acp_tool_permission_policy
+
+    monkeypatch.delenv("HERMES_COPILOT_ACP_TOOL_PERMISSION", raising=False)
+    assert _acp_tool_permission_policy() == "deny"
+
+
+def test_acp_tool_permission_policy_opt_in(monkeypatch):
+    from agent.copilot_acp_client import _acp_tool_permission_policy
+
+    for value in ("auto", "allow", "always", "true", "yes", "on", "AUTO"):
+        monkeypatch.setenv("HERMES_COPILOT_ACP_TOOL_PERMISSION", value)
+        assert _acp_tool_permission_policy() == "auto"
+
+    for value in ("deny", "off", "false", "", "nonsense"):
+        monkeypatch.setenv("HERMES_COPILOT_ACP_TOOL_PERMISSION", value)
+        assert _acp_tool_permission_policy() == "deny"
+
+
+def test_select_permission_option_prefers_durable_grant():
+    """allow_always avoids re-prompting for every command in the same turn."""
+    from agent.copilot_acp_client import _select_permission_option
+
+    options = [
+        {"optionId": "allow_once", "kind": "allow_once", "name": "Allow once"},
+        {"optionId": "allow_always", "kind": "allow_always", "name": "Always allow"},
+        {"optionId": "reject_once", "kind": "reject_once", "name": "Deny"},
+    ]
+    assert _select_permission_option(options) == "allow_always"
+
+    # Falls back to a one-shot grant when that is all the agent offers.
+    assert (
+        _select_permission_option(
+            [{"optionId": "allow_once", "kind": "allow_once"}]
+        )
+        == "allow_once"
+    )
+
+
+def test_select_permission_option_returns_none_without_allow_option():
+    """No recognisable allow option ⇒ deny rather than invent an optionId."""
+    from agent.copilot_acp_client import _select_permission_option
+
+    assert _select_permission_option([{"optionId": "reject_once", "kind": "reject_once"}]) is None
+    assert _select_permission_option([]) is None
+    assert _select_permission_option(None) is None
+    assert _select_permission_option([{"kind": "allow_once"}]) is None
+
+
+def test_permission_granted_shape():
+    from agent.copilot_acp_client import _permission_granted
+
+    assert _permission_granted(7, "allow_always") == {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "result": {"outcome": {"outcome": "selected", "optionId": "allow_always"}},
+    }

@@ -188,6 +188,74 @@ def _permission_denied(message_id: Any) -> dict[str, Any]:
     }
 
 
+def _permission_granted(message_id: Any, option_id: str) -> dict[str, Any]:
+    """Approve an agent-side tool call by selecting one of its offered options."""
+    return {
+        "jsonrpc": "2.0",
+        "id": message_id,
+        "result": {
+            "outcome": {
+                "outcome": "selected",
+                "optionId": option_id,
+            }
+        },
+    }
+
+
+# Option ``kind`` values the ACP spec defines for an approval, ordered by how
+# durable the grant is. ``allow_always`` persists for the session, so it is
+# preferred when the policy is "auto-approve": it stops the agent re-asking
+# for every subsequent command in the same turn.
+_ALLOW_KINDS_PREFERRED = ("allow_always", "allow_once")
+_DENY_KINDS = ("reject_once", "reject_always")
+
+
+def _acp_tool_permission_policy() -> str:
+    """Resolve how Hermes answers ``session/request_permission``.
+
+    The ACP backend (``copilot --acp --stdio``) is a full agent CLI with its
+    own tools. When it decides to run one it asks the client for approval.
+    Hermes historically hard-denied every such request, which made the ACP
+    provider unable to complete *any* tool-using turn: the agent got
+    "The user rejected this tool call.", gave up, and returned a bare
+    acknowledgement sentence.
+
+    Modes:
+      * ``"deny"``    — historical behavior: reject every request.
+      * ``"auto"``    — approve, preferring a session-durable grant.
+
+    Default is ``"deny"``: auto-approving lets the backend run commands with
+    no human in the loop, which must stay an explicit opt-in.
+    """
+    raw = os.getenv("HERMES_COPILOT_ACP_TOOL_PERMISSION", "").strip().lower()
+    return "auto" if raw in {"auto", "allow", "always", "true", "yes", "on"} else "deny"
+
+
+def _select_permission_option(options: Any) -> str | None:
+    """Pick an approving ``optionId`` from an ACP permission request.
+
+    Returns ``None`` when the request offers no recognisable allow option, so
+    the caller falls back to denying rather than inventing an id the agent
+    would reject.
+    """
+    if not isinstance(options, list):
+        return None
+    by_kind: dict[str, str] = {}
+    for opt in options:
+        if not isinstance(opt, dict):
+            continue
+        option_id = opt.get("optionId")
+        kind = opt.get("kind")
+        if not isinstance(option_id, str) or not option_id.strip():
+            continue
+        if isinstance(kind, str) and kind.strip():
+            by_kind.setdefault(kind.strip(), option_id.strip())
+    for kind in _ALLOW_KINDS_PREFERRED:
+        if kind in by_kind:
+            return by_kind[kind]
+    return None
+
+
 def _format_messages_as_prompt(
     messages: list[dict[str, Any]],
     model: str | None = None,
@@ -776,7 +844,17 @@ class CopilotACPClient:
         params = msg.get("params") or {}
 
         if method == "session/request_permission":
-            response = _permission_denied(message_id)
+            # The ACP backend is itself an agent with its own tools; a denial
+            # here aborts its whole plan and leaves the turn as a one-sentence
+            # acknowledgement. Honour the configured policy instead of always
+            # rejecting.
+            option_id = None
+            if _acp_tool_permission_policy() == "auto":
+                option_id = _select_permission_option(params.get("options"))
+            if option_id:
+                response = _permission_granted(message_id, option_id)
+            else:
+                response = _permission_denied(message_id)
         elif method == "fs/read_text_file":
             try:
                 path = _ensure_path_within_cwd(str(params.get("path") or ""), cwd)
