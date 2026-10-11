@@ -8,12 +8,13 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from agent.copilot_acp_client import (
     CopilotACPClient,
     _copilot_args_for_hermes_mcp,
     _copilot_mcp_cli_config,
+    _extract_acp_model_ids,
     _hermes_tools_mcp_bridge,
 )
 
@@ -56,6 +57,123 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
             {"path": "README.md"},
         )
         self.assertEqual(chunks[1].choices, [])
+
+    def test_close_kills_entire_acp_process_tree(self) -> None:
+        proc = MagicMock()
+        proc.pid = 4242
+        self.client._active_process = proc
+
+        with patch("agent.deadline.kill_process_tree") as kill_tree:
+            self.client.close()
+
+        kill_tree.assert_called_once_with(4242)
+
+    def test_extract_acp_model_ids_uses_session_new_catalog(self) -> None:
+        session = {
+            "models": {
+                "availableModels": [
+                    {"modelId": "auto"},
+                    {"modelId": "gpt-5.6-sol"},
+                    {"modelId": "gpt-5.6-terra"},
+                    {"modelId": "gpt-5.6-sol"},
+                    {"name": "missing id"},
+                ]
+            }
+        }
+
+        self.assertEqual(
+            _extract_acp_model_ids(session),
+            ["auto", "gpt-5.6-sol", "gpt-5.6-terra"],
+        )
+
+    def test_requested_model_is_selected_through_acp_session(self) -> None:
+        request = MagicMock(return_value={})
+        session = {
+            "models": {
+                "currentModelId": "gpt-5.6-sol",
+                "availableModels": [
+                    {"modelId": "gpt-5.6-sol"},
+                    {"modelId": "gpt-5.4"},
+                ],
+            }
+        }
+
+        self.client._select_session_model(
+            request,
+            session=session,
+            session_id="session-1",
+            requested_model="gpt-5.4",
+        )
+
+        request.assert_called_once_with(
+            "session/set_config_option",
+            {"sessionId": "session-1", "configId": "model", "value": "gpt-5.4"},
+        )
+
+    def test_requested_model_is_reapplied_when_session_metadata_already_matches(self) -> None:
+        request = MagicMock(return_value={})
+        session = {
+            "models": {
+                "currentModelId": "gpt-5.4",
+                "availableModels": [{"modelId": "gpt-5.4"}],
+            }
+        }
+
+        self.client._select_session_model(
+            request,
+            session=session,
+            session_id="session-1",
+            requested_model="gpt-5.4",
+        )
+
+        request.assert_called_once_with(
+            "session/set_config_option",
+            {"sessionId": "session-1", "configId": "model", "value": "gpt-5.4"},
+        )
+
+    def test_unavailable_requested_model_fails_instead_of_silent_fallback(self) -> None:
+        request = MagicMock()
+        session = {
+            "models": {
+                "currentModelId": "grok-4.5",
+                "availableModels": [{"modelId": "grok-4.5"}],
+            }
+        }
+
+        with self.assertRaisesRegex(RuntimeError, "not available"):
+            self.client._select_session_model(
+                request,
+                session=session,
+                session_id="session-1",
+                requested_model="gpt-5.6-sol",
+            )
+
+        request.assert_not_called()
+
+    def test_acp_prompt_usage_is_exposed_as_openai_usage(self) -> None:
+        with patch.object(
+            self.client,
+            "_run_prompt",
+            return_value=(
+                "done",
+                "",
+                {
+                    "inputTokens": 42_188,
+                    "outputTokens": 26,
+                    "totalTokens": 42_214,
+                    "cachedReadTokens": 12_000,
+                },
+            ),
+        ):
+            completion = self.client._create_chat_completion(
+                model="gpt-5.4",
+                messages=[{"role": "user", "content": "hello"}],
+            )
+
+        assert completion.usage.prompt_tokens == 42_188
+        assert completion.usage.completion_tokens == 26
+        assert completion.usage.total_tokens == 42_214
+        assert completion.usage.prompt_tokens_details.cached_tokens == 12_000
 
     def test_hermes_tools_mcp_bridge_exposes_only_requested_safe_tools(self) -> None:
         tools = [
@@ -142,6 +260,100 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
         self.assertEqual(effective.count("--excluded-tools"), 1)
         self.assertIn("--additional-mcp-config", effective)
 
+    def test_native_mcp_tool_turn_returns_content_instead_of_permission_cancellation(self) -> None:
+        """Replay ACP's MCP approval boundary through the real completion path."""
+        spawned_args = []
+
+        def spawn(argv, **kwargs):
+            spawned_args.extend(argv)
+            # Copilot's documented server(tool) grants skip its redundant MCP
+            # prompt. Without one it asks ACP, where unknown requests fail closed.
+            granted = "--allow-tool=hermes-tools(skill_view)" in argv
+            events = [
+                {"id": 1, "result": {}},
+                {"id": 2, "result": {"sessionId": "test-session"}},
+                {"id": 3, "result": {}},
+            ]
+            if granted:
+                events.append({
+                    "method": "session/update",
+                    "params": {"update": {
+                        "sessionUpdate": "agent_message_chunk",
+                        "content": {"type": "text", "text": "Skill loaded successfully"},
+                    }},
+                })
+            else:
+                # Observed Copilot wire shape: MCP is kind=other, even when
+                # the preceding tool_call update reports kind=read.
+                events.append({
+                    "id": 0, "method": "session/request_permission",
+                    "params": {
+                        "toolCall": {"kind": "other", "title": "skill_view",
+                                     "rawInput": {"name": "example"}},
+                        "options": [{"optionId": "once", "kind": "allow_once"}],
+                    },
+                })
+            events.append({"id": 4, "result": {"stopReason": "end_turn"}})
+            proc = MagicMock()
+            proc.pid = 4242
+            proc.poll.return_value = None
+            proc.stdin = io.StringIO()
+            proc.stdout = io.StringIO("".join(json.dumps(e) + "\n" for e in events))
+            proc.stderr = io.StringIO()
+            return proc
+
+        with patch("agent.copilot_acp_client._acp_supported", return_value=True), \
+             patch("agent.copilot_acp_client.subprocess.Popen", side_effect=spawn), \
+             patch("agent.deadline.kill_process_tree"):
+            result = self.client.chat.completions.create(
+                model="test-model",
+                messages=[{"role": "user", "content": "Load the example skill"}],
+                tools=[{"type": "function", "function": {
+                    "name": "skill_view", "description": "Load a skill",
+                    "parameters": {"type": "object", "properties": {
+                        "name": {"type": "string"}}, "required": ["name"]},
+                }}],
+                timeout=2,
+            )
+
+        self.assertEqual(result.choices[0].message.content, "Skill loaded successfully")
+        self.assertEqual(
+            [arg for arg in spawned_args if arg.startswith("--allow")],
+            ["--allow-tool=hermes-tools(skill_view)"],
+        )
+
+    def test_mcp_grants_are_turn_scoped_and_preserve_explicit_denials(self) -> None:
+        servers, names = _hermes_tools_mcp_bridge([
+            {"type": "function", "function": {"name": name, "parameters": {}}}
+            for name in ("read_file", "skill_view", "unknown_tool")
+        ])
+        args = ["--acp", "--stdio", "--deny-tool=hermes-tools(read_file)"]
+        effective = _copilot_args_for_hermes_mcp(
+            args, mcp_servers=servers, native_tool_names=names,
+        )
+        self.assertEqual(effective[:len(args)], args)
+        self.assertEqual(
+            {arg for arg in effective if arg.startswith("--allow")},
+            {"--allow-tool=hermes-tools(read_file)", "--allow-tool=hermes-tools(skill_view)"},
+        )
+        # Another request with no bridge must not inherit grants, and a
+        # third-party MCP server must not receive Hermes permissions.
+        for unrelated in (None, [{"name": "other", "command": "example", "args": []}]):
+            effective = _copilot_args_for_hermes_mcp(
+                args, mcp_servers=unrelated, native_tool_names=names,
+            )
+            self.assertFalse(any(arg.startswith("--allow") for arg in effective))
+
+    def test_unknown_mcp_permission_still_fails_closed(self) -> None:
+        response = self._dispatch({
+            "id": 10, "method": "session/request_permission",
+            "params": {
+                "toolCall": {"kind": "other", "title": "read_file", "rawInput": {}},
+                "options": [{"optionId": "once", "kind": "allow_once"}],
+            },
+        }, cwd="/tmp")
+        self.assertEqual(response["result"]["outcome"], {"outcome": "cancelled"})
+
     def test_invalid_mcp_entries_do_not_change_copilot_args(self) -> None:
         args = ["--acp", "--stdio"]
 
@@ -154,8 +366,32 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
             args,
         )
 
+    def test_requested_model_is_forwarded_to_copilot_process(self) -> None:
+        effective = _copilot_args_for_hermes_mcp(
+            ["--acp", "--stdio"],
+            mcp_servers=None,
+            requested_model="gpt-5.6-sol",
+        )
+
+        self.assertEqual(
+            effective,
+            ["--acp", "--stdio", "--model", "gpt-5.6-sol"],
+        )
+
+    def test_explicit_copilot_model_arg_is_preserved(self) -> None:
+        effective = _copilot_args_for_hermes_mcp(
+            ["--acp", "--stdio", "--model", "grok-4.5"],
+            mcp_servers=None,
+            requested_model="gpt-5.6-sol",
+        )
+
+        self.assertEqual(
+            effective,
+            ["--acp", "--stdio", "--model", "grok-4.5"],
+        )
+
     def test_copilot_tool_filter_notice_is_not_returned_to_user(self) -> None:
-        notice = "Info: Disabled tools: bash, create, edit, glob, grep, view"
+        notice = "Info: Disabled tools: bash, glob, rg, view"
         with patch.object(
             self.client,
             "_run_prompt",
@@ -536,6 +772,8 @@ def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch,
 
     assert captured["kwargs"]["env"]["HOME"] == str(real_home)
     assert captured["kwargs"]["env"]["HERMES_REAL_HOME"] == str(real_home)
+    if os.name != "nt":
+        assert captured["kwargs"]["process_group"] == 0
 
 
 def test_run_prompt_passes_home_when_parent_env_is_clean(monkeypatch, tmp_path):

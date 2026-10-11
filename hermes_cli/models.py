@@ -3871,6 +3871,15 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
         except Exception:
             access_token = None
         return get_codex_model_ids(access_token=access_token)
+    if normalized == "copilot-acp":
+        try:
+            from agent.copilot_acp_client import discover_copilot_acp_models
+
+            live = discover_copilot_acp_models()
+            if live:
+                return live
+        except Exception:
+            pass
     if normalized in {"copilot", "copilot-acp"}:
         try:
             live = _fetch_github_models(_resolve_copilot_catalog_api_key())

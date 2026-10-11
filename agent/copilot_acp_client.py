@@ -37,10 +37,8 @@ _DEFAULT_TIMEOUT_SECONDS = 900.0
 _COPILOT_TOOLS_REPLACED_BY_HERMES_MCP = (
     "bash",
     "view",
-    "edit",
-    "create",
-    "grep",
     "glob",
+    "rg",
 )
 
 _TOOL_CALL_BLOCK_RE = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.DOTALL)
@@ -286,9 +284,17 @@ def _copilot_args_for_hermes_mcp(
     args: list[str],
     *,
     mcp_servers: list[dict[str, Any]] | None,
+    requested_model: str | None = None,
+    native_tool_names: set[str] | None = None,
 ) -> list[str]:
     """Inject Hermes MCP and route duplicate Copilot tools through Hermes."""
     effective = list(args)
+    model_name = str(requested_model or "").strip()
+    has_explicit_model = any(
+        arg == "--model" or arg.startswith("--model=") for arg in effective
+    )
+    if model_name and not has_explicit_model:
+        effective.extend(["--model", model_name])
     mcp_config = _copilot_mcp_cli_config(mcp_servers)
     if mcp_config is None:
         return effective
@@ -306,6 +312,17 @@ def _copilot_args_for_hermes_mcp(
     effective.extend(
         ["--additional-mcp-config", json.dumps(mcp_config, ensure_ascii=False)]
     )
+    if "hermes-tools" in mcp_config["mcpServers"]:
+        # Only the turn-scoped bridge's tools are trusted to dispatch through
+        # Hermes's own guards. Copilot otherwise asks ACP for kind=other MCP
+        # permission, which correctly fails closed and ends the turn without
+        # text. Use server(tool) grants, never a global/server-wide allowance
+        # or title-based approval (ACP's permission title omits server identity).
+        # Explicit --deny-tool rules still take precedence in Copilot.
+        effective.extend(
+            f"--allow-tool=hermes-tools({name})"
+            for name in sorted(native_tool_names or ())
+        )
     return effective
 
 
@@ -633,6 +650,30 @@ def _ensure_path_within_cwd(path_text: str, cwd: str) -> Path:
     return resolved
 
 
+def _extract_acp_model_ids(session: Any) -> list[str]:
+    """Return the ordered model IDs advertised by ACP ``session/new``."""
+    if not isinstance(session, dict):
+        return []
+    models = session.get("models") or {}
+    if not isinstance(models, dict):
+        return []
+    available = models.get("availableModels") or []
+    if not isinstance(available, list):
+        return []
+
+    result: list[str] = []
+    seen: set[str] = set()
+    for item in available:
+        if not isinstance(item, dict):
+            continue
+        model_id = str(item.get("modelId") or "").strip()
+        if not model_id or model_id in seen:
+            continue
+        seen.add(model_id)
+        result.append(model_id)
+    return result
+
+
 class _ACPChatCompletions:
     def __init__(self, client: "CopilotACPClient"):
         self._client = client
@@ -673,6 +714,50 @@ class CopilotACPClient:
         self._active_process: subprocess.Popen[str] | None = None
         self._active_process_lock = threading.Lock()
 
+    def _spawn_process(self, effective_acp_args: list[str]) -> subprocess.Popen[str]:
+        if _acp_supported(self._acp_command, effective_acp_args) is False:
+            preview = " ".join(effective_acp_args[:3]) if effective_acp_args else "(none)"
+            raise RuntimeError(
+                f"ACP transport not supported by '{self._acp_command}': "
+                f"`{preview}` is rejected as an unknown option."
+            )
+
+        try:
+            from hermes_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
+
+            popen_kwargs: dict[str, Any] = {"creationflags": windows_hide_flags()}
+            if not IS_WINDOWS:
+                popen_kwargs["process_group"] = 0
+
+            proc = subprocess.Popen(
+                [self._acp_command] + effective_acp_args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+                cwd=self._acp_cwd,
+                env=_build_subprocess_env(),
+                **popen_kwargs,
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                f"Could not start Copilot ACP command '{self._acp_command}'. "
+                "Install GitHub Copilot CLI or set "
+                "HERMES_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
+            ) from exc
+
+        if proc.stdin is None or proc.stdout is None:
+            proc.kill()
+            raise RuntimeError("Copilot ACP process did not expose stdin/stdout pipes.")
+
+        self.is_closed = False
+        with self._active_process_lock:
+            self._active_process = proc
+        return proc
+
     def close(self) -> None:
         proc: subprocess.Popen[str] | None
         with self._active_process_lock:
@@ -681,14 +766,111 @@ class CopilotACPClient:
         self.is_closed = True
         if proc is None:
             return
+        from agent.deadline import kill_process_tree
+
+        kill_process_tree(proc.pid)
         try:
-            proc.terminate()
             proc.wait(timeout=2)
         except Exception:
-            try:
-                proc.kill()
-            except Exception:
-                pass
+            pass
+
+    def discover_models(self, *, timeout_seconds: float = 15.0) -> list[str]:
+        """Read the authenticated Copilot model catalog from ACP ``session/new``."""
+        effective_acp_args = _copilot_args_for_hermes_mcp(
+            self._acp_args,
+            mcp_servers=None,
+        )
+        proc = self._spawn_process(effective_acp_args)
+        inbox: queue.Queue[dict[str, Any]] = queue.Queue()
+
+        def _stdout_reader() -> None:
+            if proc.stdout is None:
+                return
+            for line in proc.stdout:
+                try:
+                    inbox.put(json.loads(line))
+                except Exception:
+                    continue
+
+        threading.Thread(target=_stdout_reader, daemon=True).start()
+        next_id = 0
+
+        def _request(method: str, params: dict[str, Any]) -> Any:
+            nonlocal next_id
+            next_id += 1
+            request_id = next_id
+            assert proc.stdin is not None
+            proc.stdin.write(json.dumps({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "method": method,
+                "params": params,
+            }) + "\n")
+            proc.stdin.flush()
+
+            deadline = time.monotonic() + timeout_seconds
+            while time.monotonic() < deadline:
+                if proc.poll() is not None:
+                    break
+                try:
+                    msg = inbox.get(timeout=0.1)
+                except queue.Empty:
+                    continue
+                if msg.get("id") != request_id:
+                    continue
+                if "error" in msg:
+                    err = msg.get("error") or {}
+                    raise RuntimeError(
+                        f"Copilot ACP {method} failed: {err.get('message') or err}"
+                    )
+                return msg.get("result")
+            raise TimeoutError(f"Timed out waiting for Copilot ACP response to {method}.")
+
+        try:
+            _request(
+                "initialize",
+                {
+                    "protocolVersion": 1,
+                    "clientCapabilities": {},
+                    "clientInfo": {
+                        "name": "hermes-agent",
+                        "title": "Hermes Agent",
+                        "version": "0.0.0",
+                    },
+                },
+            )
+            session = _request(
+                "session/new",
+                {"cwd": self._acp_cwd, "mcpServers": []},
+            )
+            return _extract_acp_model_ids(session)
+        finally:
+            self.close()
+
+    def _select_session_model(
+        self,
+        request: Any,
+        *,
+        session: Any,
+        session_id: str,
+        requested_model: str | None,
+    ) -> None:
+        """Select the requested model through ACP instead of trusting CLI args."""
+        model_id = str(requested_model or "").strip()
+        if not model_id:
+            return
+
+        available = _extract_acp_model_ids(session)
+        if available and model_id not in available:
+            raise RuntimeError(
+                f"Requested Copilot ACP model '{model_id}' is not available "
+                "for the current Copilot login. Choose a model from /model."
+            )
+
+        request(
+            "session/set_config_option",
+            {"sessionId": session_id, "configId": "model", "value": model_id},
+        )
 
     def _create_chat_completion(
         self,
@@ -725,20 +907,28 @@ class CopilotACPClient:
             _numeric = [float(v) for v in _candidates if isinstance(v, (int, float))]
             _effective_timeout = max(_numeric) if _numeric else _DEFAULT_TIMEOUT_SECONDS
 
-        response_text, reasoning_text = self._run_prompt(
+        prompt_result = self._run_prompt(
             prompt_text,
             timeout_seconds=_effective_timeout,
             mcp_servers=mcp_servers,
+            requested_model=model,
+            native_tool_names=native_tool_names,
         )
+        response_text, reasoning_text = prompt_result[:2]
+        acp_usage = prompt_result[2] if len(prompt_result) > 2 else {}
+        if not isinstance(acp_usage, dict):
+            acp_usage = {}
 
         response_text = _strip_copilot_tool_filter_notice(response_text)
         tool_calls, cleaned_text = _extract_tool_calls_from_text(response_text)
 
         usage = SimpleNamespace(
-            prompt_tokens=0,
-            completion_tokens=0,
-            total_tokens=0,
-            prompt_tokens_details=SimpleNamespace(cached_tokens=0),
+            prompt_tokens=int(acp_usage.get("inputTokens") or 0),
+            completion_tokens=int(acp_usage.get("outputTokens") or 0),
+            total_tokens=int(acp_usage.get("totalTokens") or 0),
+            prompt_tokens_details=SimpleNamespace(
+                cached_tokens=int(acp_usage.get("cachedReadTokens") or 0)
+            ),
         )
         assistant_message = SimpleNamespace(
             content=cleaned_text,
@@ -764,10 +954,14 @@ class CopilotACPClient:
         *,
         timeout_seconds: float,
         mcp_servers: list[dict[str, Any]] | None = None,
-    ) -> tuple[str, str]:
+        requested_model: str | None = None,
+        native_tool_names: set[str] | None = None,
+    ) -> tuple[str, str, dict[str, Any]]:
         effective_acp_args = _copilot_args_for_hermes_mcp(
             self._acp_args,
             mcp_servers=mcp_servers,
+            requested_model=requested_model,
+            native_tool_names=native_tool_names,
         )
         # Fast-fail when the CLI doesn't support the ACP args we'd pass.
         # Without this guard, a CLI like Claude Code v2.x exits with
@@ -778,48 +972,7 @@ class CopilotACPClient:
         # ``None`` (inconclusive probe — e.g. binary missing) falls
         # through to the spawn below, which raises the established
         # "Could not start Copilot ACP command" error.
-        if _acp_supported(self._acp_command, effective_acp_args) is False:
-            preview = " ".join(effective_acp_args[:3]) if effective_acp_args else "(none)"
-            raise RuntimeError(
-                f"ACP transport not supported by '{self._acp_command}': "
-                f"`{preview}` is rejected as an unknown option. "
-                f"This usually means the CLI is an older release (e.g. "
-                f"Claude Code v2.x) or a different tool than expected. "
-                f"Either install a CLI that ships with --acp support "
-                f"(e.g. `@github/copilot` late 2025+), or set "
-                f"HERMES_COPILOT_ACP_COMMAND / HERMES_COPILOT_ACP_ARGS "
-                f"to a working pair."
-            )
-
-        try:
-            # Hide the console the CLI child would otherwise flash on Windows
-            # (#56747). Hide-only — stdio pipes stay intact for the ACP wire.
-            from hermes_cli._subprocess_compat import windows_hide_flags
-
-            proc = subprocess.Popen(
-                [self._acp_command] + effective_acp_args,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True, encoding='utf-8', errors='replace',
-                bufsize=1,
-                cwd=self._acp_cwd,
-                env=_build_subprocess_env(),
-                creationflags=windows_hide_flags(),
-            )
-        except FileNotFoundError as exc:
-            raise RuntimeError(
-                f"Could not start Copilot ACP command '{self._acp_command}'. "
-                "Install GitHub Copilot CLI or set HERMES_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
-            ) from exc
-
-        if proc.stdin is None or proc.stdout is None:
-            proc.kill()
-            raise RuntimeError("Copilot ACP process did not expose stdin/stdout pipes.")
-
-        self.is_closed = False
-        with self._active_process_lock:
-            self._active_process = proc
+        proc = self._spawn_process(effective_acp_args)
 
         inbox: queue.Queue[dict[str, Any]] = queue.Queue()
         stderr_tail: deque[str] = deque(maxlen=40)
@@ -938,9 +1091,16 @@ class CopilotACPClient:
             if not session_id:
                 raise RuntimeError("Copilot ACP did not return a sessionId.")
 
+            self._select_session_model(
+                _request,
+                session=session,
+                session_id=session_id,
+                requested_model=requested_model,
+            )
+
             text_parts: list[str] = []
             reasoning_parts: list[str] = []
-            _request(
+            prompt_response = _request(
                 "session/prompt",
                 {
                     "sessionId": session_id,
@@ -953,8 +1113,17 @@ class CopilotACPClient:
                 },
                 text_parts=text_parts,
                 reasoning_parts=reasoning_parts,
+            ) or {}
+            prompt_usage = (
+                prompt_response.get("usage")
+                if isinstance(prompt_response, dict)
+                else {}
             )
-            return "".join(text_parts), "".join(reasoning_parts)
+            return (
+                "".join(text_parts),
+                "".join(reasoning_parts),
+                prompt_usage if isinstance(prompt_usage, dict) else {},
+            )
         finally:
             self.close()
 
@@ -1059,3 +1228,12 @@ class CopilotACPClient:
         process.stdin.write(json.dumps(response) + "\n")
         process.stdin.flush()
         return True
+
+
+def discover_copilot_acp_models(*, timeout_seconds: float = 15.0) -> list[str]:
+    """Return models visible to the current Copilot CLI ACP login."""
+    client = CopilotACPClient()
+    try:
+        return client.discover_models(timeout_seconds=timeout_seconds)
+    except Exception:
+        return []
