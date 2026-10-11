@@ -1,0 +1,212 @@
+[debug] [2026-08-14T09:05:30.693Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-14T09:05:30.694Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-14T09:05:30.695Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:30.695Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:30.695Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo [none]
+[debug] [2026-08-14T09:05:32.022Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo 200
+[debug] [2026-08-14T09:05:32.022Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo {"name":"projects/ms-sa-6710e/billingInfo","projectId":"ms-sa-6710e","billingAccountName":"","billingEnabled":false}
+[debug] [2026-08-14T09:05:32.029Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.029Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.029Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.029Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.030Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.030Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.034Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.034Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.034Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.034Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:32.034Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com [none]
+[debug] [2026-08-14T09:05:32.034Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-14T09:05:32.035Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-08-14T09:05:32.035Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-14T09:05:32.035Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-08-14T09:05:32.035Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-14T09:05:32.036Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-08-14T09:05:32.036Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-14T09:05:32.036Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com [none]
+[debug] [2026-08-14T09:05:32.036Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-14T09:05:33.307Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-08-14T09:05:33.307Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-08-14T09:05:33.328Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com 403
+[debug] [2026-08-14T09:05:33.328Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com [omitted]
+[debug] [2026-08-14T09:05:33.335Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com 200
+[debug] [2026-08-14T09:05:33.335Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com [omitted]
+[debug] [2026-08-14T09:05:33.345Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com 200
+[debug] [2026-08-14T09:05:33.345Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-08-14T09:05:33.346Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-08-14T09:05:33.346Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-08-14T09:05:33.346Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-14T09:05:33.346Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-14T09:05:33.347Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:33.347Z] Checked if tokens are valid: true, expires at: 1786701182579
+[debug] [2026-08-14T09:05:33.347Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo [none]
+[debug] [2026-08-14T09:05:33.709Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo 200
+[debug] [2026-08-14T09:05:33.709Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo {"name":"projects/ms-sa-6710e/billingInfo","projectId":"ms-sa-6710e","billingAccountName":"","billingEnabled":false}
+[debug] [2026-08-14T09:05:33.710Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-14T09:05:33.710Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T06:52:11.918Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T06:52:11.919Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T06:52:11.920Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.920Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.920Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:52:11.921Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:52:11.921Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:52:11.936Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------6a6164c069199ebd335cf44a","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: getaddrinfo ENOTFOUND www.googleapis.com
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-08-19T06:52:11.939Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.939Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.939Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:52:11.939Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:52:11.939Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:52:11.939Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.939Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.940Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:52:11.940Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:52:11.940Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:52:11.940Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.940Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.940Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:52:11.940Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:52:11.940Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:52:11.944Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.944Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.944Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:52:11.944Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:52:11.944Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:52:11.944Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.944Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:11.944Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:52:11.944Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:52:11.944Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:52:11.945Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------c1ce4e10e641fa013122dbf3","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: getaddrinfo ENOTFOUND www.googleapis.com
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-08-19T06:52:11.946Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------fe892b3597a7474ebbde1c03","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: getaddrinfo ENOTFOUND www.googleapis.com
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-08-19T06:52:11.946Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------9017aa741a86855e7f1542f9","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: getaddrinfo ENOTFOUND www.googleapis.com
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-08-19T06:52:11.947Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------494de084ff30e0f03d9a1578","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: getaddrinfo ENOTFOUND www.googleapis.com
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-08-19T06:52:11.947Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------2b81cce7fd4925b3cc249be1","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: getaddrinfo ENOTFOUND www.googleapis.com
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-08-19T06:52:12.030Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T06:52:12.030Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T06:52:12.030Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:12.030Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:52:12.030Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:52:12.030Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:52:12.030Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:52:12.031Z] *** [apiv2] error from fetch(https://www.googleapis.com/oauth2/v3/token, {"headers":{},"method":"POST","body":{"_overheadLength":545,"_valueLength":212,"_valuesToMeasure":[],"writable":false,"readable":true,"dataSize":0,"maxDataSize":2097152,"pauseStreams":true,"_released":true,"_streams":[],"_currentStream":null,"_insideLoop":false,"_pendingNext":false,"_boundary":"--------------------------93572aa03f1f3bab06838660","_events":{},"_eventsCount":1}}): FetchError: request to https://www.googleapis.com/oauth2/v3/token failed, reason: getaddrinfo ENOTFOUND www.googleapis.com
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-08-19T06:52:12.032Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T06:52:12.032Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T06:58:15.749Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T06:58:15.750Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T06:58:15.751Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:58:15.751Z] Checked if tokens are valid: false, expires at: 1787077998718
+[debug] [2026-08-19T06:58:15.751Z] > refreshing access token with scopes: []
+[debug] [2026-08-19T06:58:15.752Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-19T06:58:15.752Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:58:16.361Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-08-19T06:58:16.361Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-19T06:58:16.393Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo [none]
+[debug] [2026-08-19T06:58:18.150Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo 200
+[debug] [2026-08-19T06:58:18.150Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo {"name":"projects/ms-sa-6710e/billingInfo","projectId":"ms-sa-6710e","billingAccountName":"","billingEnabled":false}
+[debug] [2026-08-19T06:58:18.153Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.153Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.153Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.153Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.153Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.153Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.158Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.158Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.158Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.158Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:18.158Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com [none]
+[debug] [2026-08-19T06:58:18.158Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T06:58:18.158Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-08-19T06:58:18.158Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T06:58:18.159Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-08-19T06:58:18.159Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T06:58:18.159Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-08-19T06:58:18.159Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T06:58:18.159Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com [none]
+[debug] [2026-08-19T06:58:18.159Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T06:58:19.503Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com 403
+[debug] [2026-08-19T06:58:19.503Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com [omitted]
+[debug] [2026-08-19T06:58:19.528Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-08-19T06:58:19.528Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-08-19T06:58:19.549Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com 200
+[debug] [2026-08-19T06:58:19.549Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-08-19T06:58:19.559Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com 200
+[debug] [2026-08-19T06:58:19.559Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com [omitted]
+[debug] [2026-08-19T06:58:19.560Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-08-19T06:58:19.560Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-08-19T06:58:19.561Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T06:58:19.561Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T06:58:19.561Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:19.561Z] Checked if tokens are valid: true, expires at: 1787126295361
+[debug] [2026-08-19T06:58:19.561Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo [none]
+[debug] [2026-08-19T06:58:19.870Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo 200
+[debug] [2026-08-19T06:58:19.870Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo {"name":"projects/ms-sa-6710e/billingInfo","projectId":"ms-sa-6710e","billingAccountName":"","billingEnabled":false}
+[debug] [2026-08-19T06:58:19.871Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T06:58:19.871Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T15:27:40.570Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T15:27:40.571Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T15:27:40.571Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:40.571Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:40.572Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo [none]
+[debug] [2026-08-19T15:27:42.246Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo 200
+[debug] [2026-08-19T15:27:42.246Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo {"name":"projects/ms-sa-6710e/billingInfo","projectId":"ms-sa-6710e","billingAccountName":"","billingEnabled":false}
+[debug] [2026-08-19T15:27:42.253Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.253Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.254Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.254Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.254Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.254Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.258Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.258Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.258Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.258Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:42.258Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com [none]
+[debug] [2026-08-19T15:27:42.258Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com [none]
+[debug] [2026-08-19T15:27:42.259Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com  x-goog-user-project=ms-sa-6710e
+[debug] [2026-08-19T15:27:44.242Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com 200
+[debug] [2026-08-19T15:27:44.242Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-08-19T15:27:44.243Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-08-19T15:27:44.243Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-08-19T15:27:44.266Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com 200
+[debug] [2026-08-19T15:27:44.266Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firestore.googleapis.com [omitted]
+[debug] [2026-08-19T15:27:44.266Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-08-19T15:27:44.266Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-08-19T15:27:44.274Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com 403
+[debug] [2026-08-19T15:27:44.274Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ms-sa-6710e/services/firebaseio.com [omitted]
+[debug] [2026-08-19T15:27:44.275Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T15:27:44.275Z] > authorizing via signed-in user (tianpli@microsoft.com)
+[debug] [2026-08-19T15:27:44.275Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:44.275Z] Checked if tokens are valid: true, expires at: 1787155988246
+[debug] [2026-08-19T15:27:44.275Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo [none]
+[debug] [2026-08-19T15:27:45.762Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo 200
+[debug] [2026-08-19T15:27:45.762Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/ms-sa-6710e/billingInfo {"name":"projects/ms-sa-6710e/billingInfo","projectId":"ms-sa-6710e","billingAccountName":"","billingEnabled":false}
+[debug] [2026-08-19T15:27:45.763Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-19T15:27:45.763Z] > authorizing via signed-in user (tianpli@microsoft.com)
